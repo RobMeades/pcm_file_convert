@@ -55,7 +55,7 @@ static int parse(FILE *pInputFile, FILE *pOutputFile, int wordWidth, bool isLitt
         if (unsignedNumber & (1 << ((wordWidth << 3) - 1))) {
             // Sign extend
             for (int x = (wordWidth << 3); x < sizeof(wordArray) << 3; x++) {
-                unsignedNumber |= (1 << x);
+                unsignedNumber |= 1 << x;
             }
         }
         if (itemsWritten > 0) {
@@ -76,11 +76,11 @@ int main(int argc, char* argv[])
     int retValue = -1;
     bool success = false;
     int x = 0;
-	int wordWidth = 4;
+    int wordWidth = 4;
     char *pExeName = NULL;
-	char *pInputFileName = NULL;
+    char *pInputFileName = NULL;
     FILE *pInputFile = NULL;
-	char *pOutputFileName = NULL;
+    char *pOutputFileName = NULL;
     bool outputFileNameMalloced = false;
     FILE *pOutputFile = NULL;
     char *pEndianness = "l";
@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
         } else if (strcmp(argv[x], "-e") == 0) {
             x++;
             if (x < argc) {
-				pEndianness = argv[x];
+                pEndianness = argv[x];
             }
         // Test for word width option
         } else if (strcmp(argv[x], "-w") == 0) {
@@ -155,16 +155,23 @@ int main(int argc, char* argv[])
         if (pOutputFileName == NULL) {
             pChar = strtok(pInputFileName, EXT_SEPARATOR);
             pOutputFileName = (char *) malloc (strlen(pChar) + sizeof(OUTPUT_FILE_EXTENSION) - 1 + sizeof(EXT_SEPARATOR) - 1 + 1);
-            outputFileNameMalloced = true;
-            strcpy(pOutputFileName, pInputFileName);
-            strcat(pOutputFileName, EXT_SEPARATOR);
-            strcat(pOutputFileName, OUTPUT_FILE_EXTENSION);
+            if (pOutputFileName != NULL) {
+                outputFileNameMalloced = true;
+                strcpy(pOutputFileName, pInputFileName);
+                strcat(pOutputFileName, EXT_SEPARATOR);
+                strcat(pOutputFileName, OUTPUT_FILE_EXTENSION);
+            } else {
+                success = false;
+                printf("Cannot allocate memory for output file name.\n");
+            }
         }
         // Open the output file
-        pOutputFile = fopen(pOutputFileName, "w");
-        if (pOutputFile == NULL) {
-            success = false;
-            printf("Cannot open output file %s (%s).\n", pOutputFileName, strerror(errno));
+        if (pOutputFileName != NULL) {
+            pOutputFile = fopen(pOutputFileName, "w");
+            if (pOutputFile == NULL) {
+                success = false;
+                printf("Cannot open output file %s (%s).\n", pOutputFileName, strerror(errno));
+            }
         }
         if (success) {
             printf("Parsing of file %s starting, %s endian with %d byte words and writing output to %s.\n",
@@ -186,7 +193,7 @@ int main(int argc, char* argv[])
     if (pInputFile != NULL) {
         fclose(pInputFile);
     }
-    if (pInputFile != NULL) {
+    if (pOutputFile != NULL) {
         fclose(pOutputFile);
     }
     if (outputFileNameMalloced) {
